@@ -21,6 +21,13 @@ pub struct Settings {
     /// Headphones playback device for the monitor button; None = Windows default.
     #[serde(default)]
     pub monitor_device: Option<String>,
+    /// Last ASIO devices that actually started, per side. On a host switch cpal
+    /// marks an arbitrary first driver as default; the GUI uses this to re-pick
+    /// the right one (e.g. Voicemeeter Insert, not the AUX cable).
+    #[serde(default)]
+    pub last_asio_input: Option<String>,
+    #[serde(default)]
+    pub last_asio_output: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

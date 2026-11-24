@@ -285,6 +285,7 @@ enum CtrlMsg {
     RecordSample(f32, RecordTap, mpsc::Sender<Result<PathBuf>>),
     SetMonitor(bool, Option<String>, mpsc::Sender<Result<()>>),
     GetConfig(mpsc::Sender<Option<EngineConfig>>),
+    GetLastAsio(Direction, mpsc::Sender<Option<String>>),
 }
 
 #[derive(Clone)]
@@ -415,15 +416,24 @@ impl EngineHandle {
         };
         // ASIO has no system default, so cpal marks whichever driver enumerates
         // first — the GUI then auto-picks an arbitrary cable on a host switch.
-        // Point "default" at the device actually configured for this side.
+        // Prefer the device configured for this side; when switching from another
+        // host, fall back to the last ASIO device that actually started.
         if host == HostId::Asio {
-            if let Some(sel) = self.config().map(|c| match dir {
-                Direction::Input => c.input,
-                Direction::Output => c.output,
-            }) {
-                if sel.host == HostId::Asio && list.iter().any(|d| d.name == sel.device) {
+            let configured = self
+                .config()
+                .map(|c| match dir {
+                    Direction::Input => c.input,
+                    Direction::Output => c.output,
+                })
+                .filter(|sel| sel.host == HostId::Asio)
+                .map(|sel| sel.device);
+            let remembered = self
+                .request(|tx| CtrlMsg::GetLastAsio(dir, tx))
+                .unwrap_or(None);
+            if let Some(name) = configured.or(remembered) {
+                if list.iter().any(|d| d.name == name) {
                     for d in &mut list {
-                        d.default = d.name == sel.device;
+                        d.default = d.name == name;
                     }
                 }
             }
@@ -1063,6 +1073,12 @@ impl Engine {
             CtrlMsg::GetConfig(tx) => {
                 let _ = tx.send(self.running.as_ref().map(|r| r.cfg.clone()).or_else(|| self.settings.last_config.clone()));
             }
+            CtrlMsg::GetLastAsio(dir, tx) => {
+                let _ = tx.send(match dir {
+                    Direction::Input => self.settings.last_asio_input.clone(),
+                    Direction::Output => self.settings.last_asio_output.clone(),
+                });
+            }
         }
     }
 
@@ -1642,6 +1658,12 @@ impl Engine {
             mon_cons: Some(mon_c),
             mon: None,
         });
+        if actual_cfg.input.host == HostId::Asio {
+            self.settings.last_asio_input = Some(actual_cfg.input.device.clone());
+        }
+        if actual_cfg.output.host == HostId::Asio {
+            self.settings.last_asio_output = Some(actual_cfg.output.device.clone());
+        }
         self.settings.last_config = Some(actual_cfg);
         let _ = settings::save_settings(&self.settings);
         self.tel.stream_fault.store(false, Relaxed);
