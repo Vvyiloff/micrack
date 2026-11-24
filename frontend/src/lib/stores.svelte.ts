@@ -34,6 +34,7 @@ class AppStore {
   processingOff = $state(false);
   autostart = $state(false);
   scanning = $state(false);
+  cable = $state<ipc.VirtualCableStatus | null>(null);
   notices = $state<(Notice & { id: number; ts: number })[]>([]);
 
   chain: SlotState[] = $derived(this.telemetry?.chain ?? []);
@@ -41,12 +42,14 @@ class AppStore {
   #started = false;
   #seenNoticeCount = 0;
   #toastId = 0;
+  #hadCable: boolean | null = null;
   #bypassSnapshot: boolean[] = [];
 
   async init() {
     if (this.#started) return;
     this.#started = true;
     ui.start();
+    this.checkCable();
     try {
       const [status, hosts, plugins, cfgSnap] = await Promise.all([
         ipc.getStatus(),
@@ -94,6 +97,26 @@ class AppStore {
       list.some((d) => d.id === cur) ? cur : (list.find((d) => d.is_default) ?? list[0])?.id ?? '';
     this.cfg.input.device = pick(this.cfg.input.device, this.inputDevices);
     this.cfg.output.device = pick(this.cfg.output.device, this.outputDevices);
+  }
+
+  // Semi-auto VB-CABLE: detect, and on a missing→present transition while the
+  // app runs, switch WASAPI output to the cable. Never overrides a saved choice
+  // on the first check (#hadCable === null).
+  async checkCable() {
+    try {
+      const c = await ipc.virtualCableStatus();
+      const appeared = this.#hadCable === false && !!c.cable_input;
+      this.#hadCable = !!c.cable_input;
+      this.cable = c;
+      if (appeared && this.cfg.output.host === 'wasapi' && !this.cfg.output.device.includes('CABLE Input')) {
+        this.cfg.output = { host: 'wasapi', device: c.cable_input! };
+        await this.refreshDevices();
+        await this.applyConfig();
+        this.notify('info', 'VB-CABLE найден: вывод переключён на CABLE Input. В Discord/OBS выберите микрофон «CABLE Output».');
+      }
+    } catch {
+      /* backend without the command — ignore */
+    }
   }
 
   async setHost(host: string) {
@@ -282,6 +305,7 @@ class AppStore {
   #poll() {
     let inflight = false;
     let lastStatus = 0;
+    let lastCable = 0;
     const tick = () => {
       const now = performance.now();
       if (this.notices.length && this.notices.some((n) => now - n.ts > 5000)) {
@@ -306,6 +330,10 @@ class AppStore {
         if (now - lastStatus > 2000) {
           lastStatus = now;
           ipc.getStatus().then((s) => (this.status = s)).catch(() => {});
+        }
+        if (now - lastCable > 10000) {
+          lastCable = now;
+          this.checkCable();
         }
       }
       window.setTimeout(tick, ui.active ? 33 : 500);

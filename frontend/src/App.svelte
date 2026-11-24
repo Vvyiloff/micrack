@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { fly } from 'svelte/transition';
   import { store } from './lib/stores.svelte';
+  import * as ipc from './lib/ipc';
   import TransportBar from './lib/components/TransportBar.svelte';
   import ChainRack from './lib/components/ChainRack.svelte';
   import DevicePanel from './lib/components/DevicePanel.svelte';
@@ -22,6 +23,13 @@
 
 <div class="flex h-screen min-w-[1000px] flex-col">
   <TransportBar />
+  {#if store.cable && !store.cable.cable_input && !store.cable.voicemeeter && store.cfg.input.host === 'wasapi'}
+    <div class="flex items-center gap-3 border-b border-warn/40 bg-warn/10 px-4 py-2 text-xs text-warn">
+      <span>Чтобы обработанный голос дошёл до Discord/OBS, нужен виртуальный кабель. Установите бесплатный VB-CABLE — micrack заметит его сам и переключит вывод.</span>
+      <button class="btn ml-auto shrink-0 border-warn/40" onclick={() => ipc.openCableDownload()}>Скачать VB-CABLE</button>
+      <button class="btn shrink-0" onclick={() => store.checkCable()}>Проверить снова</button>
+    </div>
+  {/if}
   <main class="flex min-h-0 flex-1">
     <ChainRack />
     <aside class="flex w-[340px] shrink-0 flex-col gap-3 border-l border-line bg-panel/40 p-3">

@@ -31,6 +31,21 @@ fn parse_dir(s: &str) -> Direction {
 }
 
 #[tauri::command]
+fn virtual_cable_status(e: State<EngineHandle>) -> Value {
+    json!(e.virtual_cable_status())
+}
+
+#[tauri::command]
+fn open_cable_download() -> Result<(), String> {
+    // Fixed vendor URL; explorer.exe opens the default browser, no shell quoting.
+    std::process::Command::new("explorer.exe")
+        .arg("https://vb-audio.com/Cable/")
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn get_status(e: State<EngineHandle>) -> Value {
     json!(e.status())
 }
@@ -323,7 +338,9 @@ pub fn run() {
             save_preset,
             load_preset,
             pick_save_path,
-            pick_open_path
+            pick_open_path,
+            virtual_cable_status,
+            open_cable_download
         ])
         .build(tauri::generate_context!())
         .expect("error while building micrack");

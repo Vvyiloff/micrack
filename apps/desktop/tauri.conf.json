@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "com.micrack.app",
   "build": {
-    "beforeDevCommand": "npm --prefix ../../frontend run dev",
+    "beforeDevCommand": "npm --prefix ../frontend run dev",
     "devUrl": "http://localhost:5173",
-    "beforeBuildCommand": "npm --prefix ../../frontend run build",
+    "beforeBuildCommand": "npm --prefix ../frontend run build",
     "frontendDist": "../../frontend/dist"
   },
   "app": {
@@ -25,8 +25,8 @@
     }
   },
   "bundle": {
-    "active": false,
-    "targets": "all",
+    "active": true,
+    "targets": ["nsis"],
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico", "icons/icon.png"]
   }
 }

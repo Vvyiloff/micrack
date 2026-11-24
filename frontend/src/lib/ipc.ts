@@ -27,6 +27,14 @@ export const listDevices = (host: string, dir: 'input' | 'output') =>
 export const startEngine = (cfg: EngineConfig) => call<EngineStatus>('start_engine', { cfg });
 export const stopEngine = () => call<void>('stop_engine');
 export const getTelemetry = () => call<Telemetry>('get_telemetry');
+
+export interface VirtualCableStatus {
+  cable_input: string | null;
+  cable_output: string | null;
+  voicemeeter: boolean;
+}
+export const virtualCableStatus = () => call<VirtualCableStatus>('virtual_cable_status');
+export const openCableDownload = () => call<void>('open_cable_download');
 export const listPlugins = () => call<PluginEntry[]>('list_plugins');
 export const scanPlugins = () => call<PluginEntry[]>('scan_plugins');
 export const addPlugin = (id: string, index: number) => call<void>('add_plugin', { id, index });
@@ -184,6 +192,10 @@ async function mockInvoke(cmd: string, args: Record<string, unknown>): Promise<u
     case 'stop_engine':
       await delay(80);
       mockStatus = { ...mockStatus, running: false };
+      return null;
+    case 'virtual_cable_status':
+      return { cable_input: 'CABLE Input (VB-Audio Virtual Cable)', cable_output: 'CABLE Output (VB-Audio Virtual Cable)', voicemeeter: false };
+    case 'open_cable_download':
       return null;
     case 'get_telemetry':
       return mockTelemetry();

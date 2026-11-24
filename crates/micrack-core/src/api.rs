@@ -381,6 +381,17 @@ impl EngineHandle {
         rrx.recv().map_err(|_| anyhow!("engine control thread gone"))
     }
 
+    /// Semi-auto VB-CABLE helper: WASAPI-only enumeration (safe while an ASIO
+    /// stream is live — ASIO enumeration would load drivers and come back empty).
+    pub fn virtual_cable_status(&self) -> VirtualCableStatus {
+        let ins = enumerate_devices(HostId::Wasapi, Direction::Input);
+        let outs = enumerate_devices(HostId::Wasapi, Direction::Output);
+        let cable_output = ins.iter().find(|d| d.name.contains("CABLE Output")).map(|d| d.name.clone());
+        let cable_input = outs.iter().find(|d| d.name.contains("CABLE Input")).map(|d| d.name.clone());
+        let voicemeeter = ins.iter().chain(outs.iter()).any(|d| d.name.contains("Voicemeeter"));
+        VirtualCableStatus { cable_input, cable_output, voicemeeter }
+    }
+
     pub fn hosts(&self) -> Vec<HostInfo> {
         let avail = cpal::available_hosts();
         vec![
@@ -594,6 +605,13 @@ impl Default for EngineHandle {
     fn default() -> Self {
         Self::new()
     }
+}
+
+#[derive(Serialize)]
+pub struct VirtualCableStatus {
+    pub cable_input: Option<String>,
+    pub cable_output: Option<String>,
+    pub voicemeeter: bool,
 }
 
 fn host_for(id: HostId) -> Result<cpal::Host> {
