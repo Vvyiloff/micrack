@@ -1,0 +1,26 @@
+[package]
+name = "micrack-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+cpal = { workspace = true, features = ["asio"] }
+rtrb.workspace = true
+vst3-host.workspace = true
+libloading.workspace = true
+base64.workspace = true
+tracing.workspace = true
+hound.workspace = true
+realfft.workspace = true
+rustfft.workspace = true
+ebur128.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows.workspace = true
+
+[dev-dependencies]
+rtrb.workspace = true

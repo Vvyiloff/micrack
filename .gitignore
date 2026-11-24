@@ -1,0 +1,22 @@
+# Rust
+/target/
+
+# Frontend
+node_modules/
+frontend/dist/
+
+# Tauri generated
+apps/desktop/gen/
+
+# Local dev artifacts (not part of the project)
+__pycache__/
+.claude/
+.mcp.json
+*.log
+/app-*.png
+/*.wav
+/*.py
+/set_default_*.ps1
+/downloads/
+/presets/
+/vstplugins/

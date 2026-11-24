@@ -1,0 +1,28 @@
+[package]
+name = "micrack-desktop"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "micrack_desktop_lib"
+path = "src/lib.rs"
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-dialog = "2"
+micrack-core = { path = "../../crates/micrack-core" }
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+axum = "0.8"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }
+rand = "0.9"
+rmcp = { version = "=3.11.0", features = ["server", "transport-io"] }
+schemars = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json"] }
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]
+
+[build-dependencies]
+tauri-build = { version = "2" }
